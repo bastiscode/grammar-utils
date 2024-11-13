@@ -1,0 +1,35 @@
+[project]
+name = "grammar-utils"
+description = "Utilities for regex and grammar parsing and constraining"
+version = "0.1.0"
+authors = [
+    { name = "Sebastian Walter", email = "swalter@cs.uni-freiburg.de" }
+]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+
+keywords = ["nlp", "utilities", "text", "grammar", "constraint"]
+
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Text Processing",
+    "Topic :: Utilities"
+]
+
+dependencies = [
+    "numpy>=1.26",
+]
+
+[project.urls]
+Github = "https://github.com/bastiscode/grammar-utils"
+
+[build-system]
+requires = ["maturin>=1"]
+build-backend = "maturin"
+
+[tool.maturin]
+python-source = "python"
+module-name = "grammar_utils._internal"

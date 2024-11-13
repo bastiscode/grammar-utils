@@ -1,0 +1,4 @@
+// this regex will produce rdf-like triples
+%%
+(<bos>[a-z]{10}</eos> <bop>[a-z]{10}</eop> <boo>[a-z]{10}<eoo> \.
+){3}

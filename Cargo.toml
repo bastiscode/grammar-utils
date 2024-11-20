@@ -1,6 +1,6 @@
 [package]
 publish = false
-name = "grammar-utils-rs"
+name = "grammar-utils"
 version = "0.1.0"
 edition = "2021"
 

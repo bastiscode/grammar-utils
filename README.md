@@ -15,7 +15,7 @@ You can install the Python package from PyPI:
 pip install grammar-utils
 ```
 
-Windows (x64) and Linux are currently supported when installing from PyPI.
+Only Linux is currently supported when installing from PyPI. Windows is causing some issues in CI so builds for this platform are not yet available.
 
 Alternatively, you can clone this repository and build the package yourself:
 

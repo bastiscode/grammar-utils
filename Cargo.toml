@@ -6,7 +6,7 @@ edition = "2021"
 
 [lib]
 name = "grammar_utils"
-crate-type = ["rlib", "cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 regex = "1.10"

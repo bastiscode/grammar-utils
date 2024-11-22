@@ -20,7 +20,7 @@ def load_lr1_constraint(
     - sparql
 
     """
-    return LR1Constraint.from_grammar_and_lexer(
+    return LR1Constraint(
         *load_grammar_and_lexer(name), vocab, exact=exact, lru_cache_size=lru_cache_size
     )
 
@@ -43,7 +43,7 @@ def load_regex_constraint(name: str, vocab: list[list[int]]) -> RegexConstraint:
         regex = "[+-]?(\d+(\.\d*)?|\.\d+)"
     else:
         raise ValueError(f"unsupported regex constraint: {name}")
-    return RegexConstraint.from_regex(regex, vocab)
+    return RegexConstraint(regex, vocab)
 
 
 class Constraint:

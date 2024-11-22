@@ -70,7 +70,7 @@ from grammar_utils.parse import LR1Parser
 # define your own grammar and lexer
 grammar = "..."
 lexer = "..."
-parser = LR1Parser.from_grammar_and_lexer(grammar, lexer, vocab)
+parser = LR1Parser(grammar, lexer, vocab)
 ```
 
 #### Constraining
@@ -123,11 +123,11 @@ vocab = load_byte_vocab()
 # define your own grammar and lexer
 grammar = "..."
 lexer = "..."
-constraint = LR1Constraint.from_grammar_and_lexer(grammar, lexer, vocab)
+constraint = LR1Constraint(grammar, lexer, vocab)
 
 # define your own regex
 regex = "..."
-constraint = RegexConstraint.from_regex(regex, vocab)
+constraint = RegexConstraint(regex, vocab)
 ```
 
 ### Use cases

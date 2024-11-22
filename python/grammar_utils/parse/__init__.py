@@ -14,7 +14,7 @@ def load_lr1_parser(name: str) -> tuple[str, str]:
     - sparql
 
     """
-    return LR1Parser.from_grammar_and_lexer(*load_grammar_and_lexer(name))
+    return LR1Parser(*load_grammar_and_lexer(name))
 
 
 if __name__ == "__main__":

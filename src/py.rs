@@ -1,5 +1,4 @@
 use std::{
-    env::var,
     num::NonZeroUsize,
     sync::{mpsc::channel, Arc, Mutex},
 };
@@ -56,8 +55,8 @@ impl RegexConstraint {
 
 #[pymethods]
 impl RegexConstraint {
-    #[staticmethod]
-    fn from_regex(regex: &str, continuations: Vec<Vec<u8>>) -> anyhow::Result<Self> {
+    #[new]
+    fn new(regex: &str, continuations: Vec<Vec<u8>>) -> anyhow::Result<Self> {
         RegularExpressionConstraint::new(regex, continuations)
             .map(Self::init)
             .map_err(|e| {
@@ -236,11 +235,6 @@ impl LR1Constraint {
         let is_match = constraint.is_match_state(&state);
         // get cache size from env variable TEXT_UTILS_LR1_CACHE_SIZE
         let cache_size = lru_cache_size
-            .or_else(|| {
-                var("TEXT_UTILS_LR1_CACHE_SIZE")
-                    .ok()
-                    .and_then(|s| s.parse().ok())
-            })
             .and_then(NonZeroUsize::new)
             .unwrap_or(NonZeroUsize::new(8192).unwrap());
         let mut cache = LruCache::new(cache_size);
@@ -260,9 +254,9 @@ impl LR1Constraint {
 
 #[pymethods]
 impl LR1Constraint {
-    #[staticmethod]
+    #[new]
     #[pyo3(signature = (grammar, lexer, continuations, exact=false, lru_cache_size=None))]
-    fn from_grammar_and_lexer(
+    fn new(
         grammar: &str,
         lexer: &str,
         continuations: Vec<Vec<u8>>,
@@ -411,8 +405,8 @@ pub struct LR1Parser {
 
 #[pymethods]
 impl LR1Parser {
-    #[staticmethod]
-    fn from_grammar_and_lexer(grammar: &str, lexer: &str) -> anyhow::Result<Self> {
+    #[new]
+    fn new(grammar: &str, lexer: &str) -> anyhow::Result<Self> {
         let inner = LR1GrammarParser::new(grammar, lexer).map_err(|e| {
             anyhow!(
                 "failed to create LR(1) grammar parser from grammar {} and lexer {}: {}",

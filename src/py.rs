@@ -112,10 +112,10 @@ impl RegexConstraint {
             .map_err(|_| anyhow!("error locking inner state"))
     }
 
-    fn get(&self, py: Python<'_>) -> anyhow::Result<PyObject> {
+    fn get<'py>(&self, py: Python<'py>) -> anyhow::Result<Bound<'py, PyArray1<i32>>> {
         self.inner
             .lock()
-            .map(|inner| inner.indices.clone().into_pyarray_bound(py).into_py(py))
+            .map(|inner| inner.indices.clone().into_pyarray(py))
             .map_err(|_| anyhow!("error locking inner state"))
     }
 
@@ -338,7 +338,7 @@ impl LR1Constraint {
             .map_err(|_| anyhow!("error locking inner state"))
     }
 
-    fn get(&self, py: Python<'_>) -> anyhow::Result<Py<PyArray1<i32>>> {
+    fn get<'py>(&self, py: Python<'py>) -> anyhow::Result<Bound<'py, PyArray1<i32>>> {
         self.inner
             .lock()
             .map(|inner| {
@@ -348,8 +348,7 @@ impl LR1Constraint {
                 } else {
                     inner.indices.clone()
                 }
-                .into_pyarray_bound(py)
-                .unbind()
+                .into_pyarray(py)
             })
             .map_err(|_| anyhow!("error locking inner state"))
     }
@@ -432,30 +431,30 @@ impl LR1Parser {
     }
 
     #[pyo3(signature = (input, skip_empty = false, collapse_single = false))]
-    fn prefix_parse(
-        slf: PyRef<'_, Self>,
-        py: Python<'_>,
+    fn prefix_parse<'py>(
+        &self,
+        py: Python<'py>,
         input: &[u8],
         skip_empty: bool,
         collapse_single: bool,
-    ) -> anyhow::Result<(PyObject, Vec<u8>)> {
-        let (parse, end) = slf
+    ) -> anyhow::Result<(Bound<'py, PyDict>, Vec<u8>)> {
+        let (parse, end) = self
             .inner
             .prefix_parse(input, skip_empty, collapse_single)
             .map_err(|e| anyhow!("failed to parse input: {e}"))?;
-        let py_parse = parse_into_py(std::str::from_utf8(input)?, &parse, py)?;
-        Ok((py_parse, end.to_vec()))
+        let parse_dict = parse_into_py(std::str::from_utf8(input)?, &parse, py)?;
+        Ok((parse_dict, end.to_vec()))
     }
 
     #[pyo3(signature = (input, skip_empty = false, collapse_single = false))]
-    fn parse(
-        slf: PyRef<'_, Self>,
-        py: Python<'_>,
+    fn parse<'py>(
+        &self,
+        py: Python<'py>,
         input: &str,
         skip_empty: bool,
         collapse_single: bool,
-    ) -> anyhow::Result<PyObject> {
-        let parse = slf
+    ) -> anyhow::Result<Bound<'py, PyDict>> {
+        let parse = self
             .inner
             .parse(input, skip_empty, collapse_single)
             .map_err(|e| anyhow!("failed to parse input: {e}"))?;
@@ -469,12 +468,12 @@ impl LR1Parser {
     }
 }
 
-fn parse_into_py(
+fn parse_into_py<'py>(
     text: impl AsRef<[u8]>,
     parse: &LR1Parse<'_>,
-    py: Python<'_>,
-) -> PyResult<PyObject> {
-    let dict = PyDict::new_bound(py);
+    py: Python<'py>,
+) -> PyResult<Bound<'py, PyDict>> {
+    let dict = PyDict::new(py);
     let bytes = text.as_ref();
     match parse {
         LR1Parse::Empty(name) => {
@@ -488,17 +487,17 @@ fn parse_into_py(
         }
         LR1Parse::NonTerminal(name, children) => {
             dict.set_item("name", name)?;
-            let children = PyList::new_bound(
+            let children = PyList::new(
                 py,
                 children
                     .iter()
                     .map(|c| parse_into_py(bytes, c, py))
                     .collect::<PyResult<Vec<_>>>()?,
-            );
+            )?;
             dict.set_item("children", children)?;
         }
     };
-    Ok(dict.into())
+    Ok(dict)
 }
 
 /// The module containing all python bindings for the grammar utils library.

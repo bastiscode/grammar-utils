@@ -1,7 +1,7 @@
 [project]
 name = "grammar-utils"
 description = "Utilities for regex and grammar parsing and constraining"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
     { name = "Sebastian Walter", email = "swalter@cs.uni-freiburg.de" }
 ]

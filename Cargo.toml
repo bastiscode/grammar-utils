@@ -1,17 +1,13 @@
 [package]
-publish = false
 name = "grammar-utils"
 version = "0.1.2"
 edition = "2021"
-
-[lib]
-name = "grammar_utils"
-crate-type = ["cdylib", "rlib"]
+publish = false
 
 [dependencies]
 regex = "1.10"
 regex-automata = "0.4"
-itertools = "0.13"
+itertools = "0.14"
 cfgrammar = { version = "0.13", features = ["serde"] }
 lrtable = { version = "0.13", features = ["serde"] }
 lrlex = "0.13"
@@ -31,11 +27,6 @@ criterion = "0.5"
 rand = "0.8"
 rand_distr = "0.4"
 rand_chacha = "0.3"
-
-[profile.release]
-lto = true
-codegen-units = 1
-strip = true
 
 [[bench]]
 name = "benchmark"

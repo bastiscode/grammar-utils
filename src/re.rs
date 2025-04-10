@@ -155,7 +155,7 @@ mod test {
     #[test]
     fn test_re_patterns() {
         let continuations = load_continuations();
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let n = 10;
         for pat in load_patterns() {
             let re = RegularExpressionConstraint::new(&pat, continuations.clone()).unwrap();
@@ -189,7 +189,7 @@ mod test {
         .unwrap()
         .filter_map(|entry| entry.map(|e| e.path()).ok())
         .collect();
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let n = 10;
         for file in files {
             let re = RegularExpressionConstraint::from_file(&file, continuations.clone()).unwrap();

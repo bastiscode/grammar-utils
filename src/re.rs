@@ -16,8 +16,8 @@ pub struct RegularExpressionConstraint {
 impl RegularExpressionConstraint {
     pub fn new(content: &str, continuations: Vec<Vec<u8>>) -> Result<Self, Box<dyn Error>> {
         let fragment_name = Regex::new(r"\{([A-Z][A-Z0-9_]*)\}")?;
-        let fragment_line = Regex::new(r"(?m)^([A-Z][A-Z0-9_]*)\s+(.+)$")?;
-        let sep = Regex::new("(?m)^%%\\n")?;
+        let fragment_line = Regex::new(r"(?Rm)^([A-Z][A-Z0-9_]*)\s+(.+)$")?;
+        let sep = Regex::new("(?Rm)^%%$")?;
         let pattern = if let Some(m) = sep.find(content) {
             // parse fragements
             let mut fragments = HashMap::new();
@@ -37,7 +37,7 @@ impl RegularExpressionConstraint {
             }
             pattern_from_parts(
                 "regular expression",
-                &[Part::Regex(content[m.end()..].to_string())],
+                &[Part::Regex(content[m.end()..].trim_start().to_string())],
                 &fragment_name,
                 &fragments,
                 &IndexMap::new(),

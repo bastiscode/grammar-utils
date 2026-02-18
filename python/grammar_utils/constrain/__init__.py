@@ -21,7 +21,10 @@ def load_lr1_constraint(
 
     """
     return LR1Constraint(
-        *load_grammar_and_lexer(name), vocab, exact=exact, lru_cache_size=lru_cache_size
+        *load_grammar_and_lexer(name),
+        vocab,
+        exact=exact,
+        lru_cache_size=lru_cache_size,
     )
 
 
@@ -38,9 +41,9 @@ def load_regex_constraint(name: str, vocab: list[list[int]]) -> RegexConstraint:
     if name == "boolean":
         regex = "true|false"
     elif name == "integer":
-        regex = "[+-]?\d+"
+        regex = r"[+-]?\d+"
     elif name == "decimal":
-        regex = "[+-]?(\d+(\.\d*)?|\.\d+)"
+        regex = r"[+-]?(\d+(\.\d*)?|\.\d+)"
     else:
         raise ValueError(f"unsupported regex constraint: {name}")
     return RegexConstraint(regex, vocab)

@@ -1357,7 +1357,7 @@ mod test {
                 .collect_vec(),
             spans
                 .iter()
-                .map(|(s, l)| (String::from_utf8_lossy(&prefix[*s..*s + *l])))
+                .map(|(s, l)| String::from_utf8_lossy(&prefix[*s..*s + *l]))
                 .collect_vec()
         );
         let (tokens, .., matching, _) = prefix_lexer(b"PREFIX", &lrk.pdfas).unwrap();

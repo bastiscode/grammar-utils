@@ -461,7 +461,7 @@ impl LR1Parser {
         Ok(parse_into_py(input, &parse, py)?)
     }
 
-    fn lex(&self, input: &str) -> anyhow::Result<Vec<TokenAndSpan>> {
+    fn lex(&self, input: &str) -> anyhow::Result<Vec<TokenAndSpan<'_>>> {
         self.inner
             .lex(input)
             .map_err(|e| anyhow!("failed to lex input: {e}"))

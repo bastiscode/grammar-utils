@@ -1194,6 +1194,7 @@ mod test {
             .collect()
     }
 
+    #[allow(clippy::type_complexity)]
     fn get_calc_pfdas() -> (
         Vec<(PrefixDFA, Option<TIdx<u32>>)>,
         HashMap<TIdx<u32>, &'static str>,
@@ -1218,6 +1219,7 @@ mod test {
         )
     }
 
+    #[allow(clippy::type_complexity)]
     fn get_ab_pdfas() -> (
         Vec<(PrefixDFA, Option<TIdx<u32>>)>,
         HashMap<TIdx<u32>, &'static str>,
@@ -1584,11 +1586,13 @@ mod test {
                 .copied()
                 .chain(continuations[i].clone())
                 .collect();
-            let (tokens, spans, ..) = prefix_lexer(&full, &lrk.pdfas).expect(&format!(
-                "failed to lex full prefix {:?} for continuation {:?} at {i:?}",
-                String::from_utf8_lossy(&full),
-                String::from_utf8_lossy(&continuations[i])
-            ));
+            let (tokens, spans, ..) = prefix_lexer(&full, &lrk.pdfas).unwrap_or_else(|_| {
+                panic!(
+                    "failed to lex full prefix {:?} for continuation {:?} at {i:?}",
+                    String::from_utf8_lossy(&full),
+                    String::from_utf8_lossy(&continuations[i])
+                )
+            });
             assert!(
                 drive_with_tokens(&lrk.grammar, &lrk.table, &tokens),
                 "failed to drive with tokens {:?} corresponding to {:?} for continuation {:?} at {i} and full prefix {:?}",

@@ -37,7 +37,7 @@ fn load_grammars() -> impl Iterator<Item = (String, PathBuf, PathBuf, Vec<(Strin
                     let name = entry.path().file_stem().unwrap().to_str().unwrap().into();
                     let example = read_to_string(entry.path())
                         .unwrap()
-                        .trim_end_matches(&['\r', '\n'])
+                        .trim_end_matches(['\r', '\n'])
                         .as_bytes()
                         .to_vec();
                     (name, example)

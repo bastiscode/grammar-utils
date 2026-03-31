@@ -258,7 +258,8 @@ fn lexer(
     text: impl AsRef<[u8]>,
     pdfas: &[(PrefixDFA, Option<TIdx<u32>>)],
 ) -> Result<(Tokens, Spans), Box<dyn Error>> {
-    let (mut tokens, mut spans, last_matches, last_span) = prefix_lexer(text.as_ref(), pdfas)?;
+    let text = text.as_ref();
+    let (mut tokens, mut spans, last_matches, last_span) = prefix_lexer(text, pdfas)?;
     if let Some(&token) = last_matches.iter().find_map(|&(pidx, state)| {
         let (pdfa, token) = &pdfas[pidx];
         if pdfa.is_eoi_match(state) {
@@ -273,6 +274,13 @@ fn lexer(
         );
         tokens.push(token);
         spans.push(last_span);
+    } else if last_span.0 < last_span.1 {
+        return Err(format!(
+            "failed to parse input: unexpected trailing content from position {}: {}",
+            last_span.0,
+            String::from_utf8_lossy(&text[last_span.0..])
+        )
+        .into());
     }
     Ok((tokens, spans))
 }
@@ -1293,6 +1301,28 @@ mod test {
         );
         assert_eq!(spans, vec![(0, 2), (2, 3)]);
         assert!(lexer("abac", &pdfas).is_err());
+        // trailing content that is a prefix of a token but not complete should error
+        let pdfas_with_string: Vec<(PrefixDFA, Option<TIdx<u32>>)> = vec![
+            (PrefixDFA::new("[a-z]+").unwrap(), Some(TIdx(0))),
+            (PrefixDFA::new("'[^']*'").unwrap(), Some(TIdx(1))),
+            (PrefixDFA::new("[ ]+").unwrap(), None),
+        ];
+        assert!(lexer("hello", &pdfas_with_string).is_ok());
+        assert!(lexer("hello 'world'", &pdfas_with_string).is_ok());
+        let err = lexer("hello 'unclosed", &pdfas_with_string)
+            .unwrap_err()
+            .to_string();
+        assert!(
+            err.contains("trailing content from position 6: 'unclosed"),
+            "unexpected error message: {err}"
+        );
+        let err = lexer("hello'rest", &pdfas_with_string)
+            .unwrap_err()
+            .to_string();
+        assert!(
+            err.contains("trailing content from position 5: 'rest"),
+            "unexpected error message: {err}"
+        );
     }
 
     fn combine_prefix_lexer_outputs(
@@ -1504,6 +1534,29 @@ mod test {
         for example in examples {
             lrk.prefix_parse(example.as_bytes(), false, false).unwrap();
         }
+    }
+
+    #[test]
+    fn test_parse_rejects_partial_match() {
+        let (grammar, lexer, _) = load_lrk_grammar("sparql");
+        let lrk = LR1GrammarParser::from_files(grammar, lexer).unwrap();
+        // valid SPARQL should parse fine
+        assert!(lrk
+            .parse("SELECT ?x WHERE { ?x ?y ?z }", false, false)
+            .is_ok());
+        // trailing content that is prefix of a string token should fail
+        let err = lrk
+            .parse("SELECT ?x WHERE { ?x ?y ?z } 'unclosed", false, false)
+            .unwrap_err()
+            .to_string();
+        assert!(
+            err.contains("trailing content from position 29: 'unclosed"),
+            "unexpected error message: {err}"
+        );
+        // prefix_parse should still accept partial input
+        assert!(lrk
+            .prefix_parse(b"SELECT ?x WHERE { ?x ?y ?z } 'unclosed", false, false)
+            .is_ok());
     }
 
     fn drive_with_tokens(

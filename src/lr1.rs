@@ -254,33 +254,71 @@ fn prefix_lexer(
     prefix_lexer_with(prefix.as_ref(), pdfas, prefix_matches)
 }
 
+// longest non-empty complete token at the start of the text
+fn longest_match(
+    text: &[u8],
+    pdfas: &[(PrefixDFA, Option<TIdx<u32>>)],
+) -> Option<(Option<TIdx<u32>>, usize)> {
+    let mut longest: Option<(Option<TIdx<u32>>, usize)> = None;
+    for (pdfa, token) in pdfas {
+        if let Some(len) = pdfa.find_longest_match(text) {
+            if len > 0 && longest.is_none_or(|(_, longest_len)| len > longest_len) {
+                longest = Some((*token, len));
+            }
+        }
+    }
+    longest
+}
+
 fn lexer(
     text: impl AsRef<[u8]>,
     pdfas: &[(PrefixDFA, Option<TIdx<u32>>)],
 ) -> Result<(Tokens, Spans), Box<dyn Error>> {
     let text = text.as_ref();
-    let (mut tokens, mut spans, last_matches, last_span) = prefix_lexer(text, pdfas)?;
-    if let Some(&token) = last_matches.iter().find_map(|&(pidx, state)| {
-        let (pdfa, token) = &pdfas[pidx];
-        if pdfa.is_eoi_match(state) {
-            Some(token)
-        } else {
-            None
-        }
-    }) {
-        assert!(
-            last_span.1 > last_span.0,
-            "last span should not be empty in this case"
+    let mut tokens = vec![];
+    let mut spans = vec![];
+    let mut offset = 0;
+    loop {
+        let (prefix_tokens, prefix_spans, last_matches, (start, end)) =
+            prefix_lexer(&text[offset..], pdfas)?;
+        tokens.extend(prefix_tokens);
+        spans.extend(
+            prefix_spans
+                .into_iter()
+                .map(|(s, e)| (offset + s, offset + e)),
         );
+        let (start, end) = (offset + start, offset + end);
+        if start == end {
+            break;
+        }
+
+        if let Some(&token) = last_matches.iter().find_map(|&(pidx, state)| {
+            let (pdfa, token) = &pdfas[pidx];
+            if pdfa.is_eoi_match(state) {
+                Some(token)
+            } else {
+                None
+            }
+        }) {
+            tokens.push(token);
+            spans.push((start, end));
+            break;
+        }
+
+        // the rest of the text only starts longer tokens, so fall back to the
+        // longest complete token at its start and continue after it, as within
+        // the text
+        let Some((token, len)) = longest_match(&text[start..], pdfas) else {
+            return Err(format!(
+                "failed to parse input: unexpected trailing content from position {}: {}",
+                start,
+                String::from_utf8_lossy(&text[start..])
+            )
+            .into());
+        };
         tokens.push(token);
-        spans.push(last_span);
-    } else if last_span.0 < last_span.1 {
-        return Err(format!(
-            "failed to parse input: unexpected trailing content from position {}: {}",
-            last_span.0,
-            String::from_utf8_lossy(&text[last_span.0..])
-        )
-        .into());
+        spans.push((start, start + len));
+        offset = start + len;
     }
     Ok((tokens, spans))
 }
@@ -1323,6 +1361,39 @@ mod test {
             err.contains("trailing content from position 5: 'rest"),
             "unexpected error message: {err}"
         );
+    }
+
+    #[test]
+    fn test_lexer_falls_back_at_end() {
+        // prefixed names, everything else skipped character by character
+        let pdfas: Vec<(PrefixDFA, Option<TIdx<u32>>)> = vec![
+            (
+                PrefixDFA::new("[a-z]+:([a-z.]*[a-z])?").unwrap(),
+                Some(TIdx(0)),
+            ),
+            (PrefixDFA::new("[ ]+").unwrap(), None),
+            (PrefixDFA::new(".").unwrap(), None),
+        ];
+        let names = |text: &str| {
+            let (tokens, spans) = lexer(text, &pdfas).unwrap();
+            tokens
+                .into_iter()
+                .zip(spans)
+                .filter(|(token, _)| token.is_some())
+                .map(|(_, (start, end))| text[start..end].to_string())
+                .collect_vec()
+        };
+        // the end of the text only starts a prefixed name
+        assert_eq!(
+            lexer("and", &pdfas).unwrap().1,
+            vec![(0, 1), (1, 2), (2, 3)]
+        );
+        assert_eq!(names("see ex:foo and"), vec!["ex:foo"]);
+        // a complete prefixed name followed by the start of a longer one
+        assert_eq!(names("see ex:foo."), vec!["ex:foo"]);
+        assert_eq!(names("ex:foo.b"), vec!["ex:foo.b"]);
+        assert_eq!(names("ex:"), vec!["ex:"]);
+        assert!(names("").is_empty());
     }
 
     fn combine_prefix_lexer_outputs(

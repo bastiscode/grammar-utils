@@ -173,6 +173,27 @@ impl PrefixDFA {
             last_match.map_or(PrefixMatch::None, PrefixMatch::UpTo)
         }
     }
+
+    // length of the longest complete match at the start of the text, also
+    // if the text continues with a prefix of a longer match
+    #[inline]
+    pub(crate) fn find_longest_match(&self, text: &[u8]) -> Option<usize> {
+        let mut state = self.get_start_state();
+        let mut last_match = None;
+        for (i, &b) in text.iter().enumerate() {
+            state = self.dfa.next_state(state, b);
+            if self.dfa.is_match_state(state) {
+                last_match = Some(i);
+            } else if self.is_dead_or_quit(state) {
+                return last_match;
+            }
+        }
+        if self.is_eoi_match(state) {
+            Some(text.len())
+        } else {
+            last_match
+        }
+    }
 }
 
 pub fn optimized_prefix_order<C>(continuations: &[C]) -> (Vec<usize>, Vec<usize>)
